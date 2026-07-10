@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e1526" />
+  <title>Summer Checklist — Kids' Holidays</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Summer Checklist" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>☀️ Summer Checklist</h1>
+    <p class="subtitle">Make the most of the school holidays</p>
+  </header>
+
+  <main>
+    <section class="card" id="result-card">
+      <div class="result-head">
+        <div>
+          <h2 id="result-title">Your summer</h2>
+          <p class="result-meta" id="result-meta">Tick things off as you go</p>
+        </div>
+        <span class="progress-badge" id="progress-badge">0%</span>
+      </div>
+      <div id="all-done" class="all-done hidden">🎉 Amazing — you've done it all!</div>
+      <div id="checklist"></div>
+      <div class="result-actions">
+        <button id="reset-daily" class="btn-secondary">Reset daily basics</button>
+        <button id="reset-all" class="btn-secondary">Uncheck everything</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span id="install-hint"></span>
+  </footer>
+
+  <script src="checklist-data.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Register the service worker in production only. On localhost we skip it (and
+    // unregister any existing one) so code edits always show up on reload.
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      var host = location.hostname;
+      var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
+      if (isLocal) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        });
+        return;
+      }
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    })();
+  </script>
+</body>
+</html>
