@@ -9,6 +9,7 @@
 const CHECKLIST = [
   {
     category: "🎯 Daily basics",
+    color: "#ff8a5c",
     daily: true,
     items: [
       "Read for 20 minutes",
@@ -21,8 +22,10 @@ const CHECKLIST = [
   },
   {
     category: "🗓️ Activities & days out",
+    color: "#4f9dff",
     items: [
       "Beach or park trip",
+      "Natural History Museum",
       "Library visit",
       "Bike ride",
       "Picnic",
@@ -38,9 +41,11 @@ const CHECKLIST = [
   },
   {
     category: "🌧️ Rainy-day ideas",
+    color: "#7c8cff",
     items: [
       "Board games",
-      "Build a den",
+      "Make tea",
+      "Build a fort",
       "Arts & crafts",
       "Baking / cooking",
       "Jigsaw puzzle",
@@ -51,6 +56,7 @@ const CHECKLIST = [
   },
   {
     category: "🧳 Day-out bag",
+    color: "#37d39a",
     items: [
       "Water bottles",
       "Sun cream",
@@ -66,6 +72,7 @@ const CHECKLIST = [
   },
   {
     category: "📚 Keep learning",
+    color: "#ffb020",
     items: [
       "Summer reading challenge",
       "Times tables practice",
@@ -76,6 +83,7 @@ const CHECKLIST = [
   },
   {
     category: "✅ Back-to-school prep",
+    color: "#f76fb0",
     items: [
       "New uniform",
       "School shoes",
