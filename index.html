@@ -65,8 +65,30 @@
         });
         return;
       }
+      // When a new service worker takes control (after a deploy), reload once so
+      // the freshly-fetched code is applied without a manual hard-refresh.
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('service-worker.js');
+        navigator.serviceWorker.register('service-worker.js').then(function (reg) {
+          // If an updated worker is waiting, activate it immediately.
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          reg.addEventListener('updatefound', function () {
+            var nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', function () {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                nw.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+        });
+        // Proactively check for a new version each time the app loads.
+        navigator.serviceWorker.ready.then(function (reg) { reg.update(); });
       });
     })();
   </script>
