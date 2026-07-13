@@ -31,27 +31,42 @@
   </nav>
 
   <main>
-    <section class="card hero-card">
-      <div class="hero">
-        <div class="hero-emoji" id="hero-emoji">🌱</div>
-        <div class="hero-copy">
-          <h2 id="hero-title">Let's get started!</h2>
-          <div class="hero-bar">
-            <span class="hero-bar-fill" id="hero-bar-fill"></span>
-          </div>
-          <p class="hero-sub" id="hero-sub"><b id="hero-count">0 of 0</b> · Tick things off as you go</p>
-        </div>
+    <!-- HOME VIEW: summery activity tiles -->
+    <section id="home" class="home-view">
+      <div class="home-hero">
+        <h2 class="home-greeting">Ready for an adventure?</h2>
+        <p class="home-tagline">Pick something fun to plan for the holidays ☀️</p>
       </div>
-      <div id="all-done" class="all-done hidden">🎉 Amazing — you've done it all!</div>
+      <div id="home-tiles" class="home-tiles"></div>
+      <p class="home-credit">Photos via Openverse (Creative Commons) — see credits in the drawer.</p>
     </section>
 
-    <div id="checklist" class="checklist-grid"></div>
+    <!-- DETAIL VIEW: the checklist for a chosen category -->
+    <section id="detail" class="detail-view hidden">
+      <button id="back-home" class="back-home">‹ Back to activities</button>
 
-    <section class="card actions-card">
-      <div class="result-actions">
-        <button id="reset-daily" class="btn-secondary">Reset daily basics</button>
-        <button id="reset-all" class="btn-secondary">Uncheck everything</button>
-      </div>
+      <section class="card hero-card">
+        <div class="hero">
+          <div class="hero-emoji" id="hero-emoji">🌱</div>
+          <div class="hero-copy">
+            <h2 id="hero-title">Let's get started!</h2>
+            <div class="hero-bar">
+              <span class="hero-bar-fill" id="hero-bar-fill"></span>
+            </div>
+            <p class="hero-sub" id="hero-sub"><b id="hero-count">0 of 0</b> · Tick things off as you go</p>
+          </div>
+        </div>
+        <div id="all-done" class="all-done hidden">🎉 Amazing — you've done it all!</div>
+      </section>
+
+      <div id="checklist" class="checklist-grid"></div>
+
+      <section class="card actions-card">
+        <div class="result-actions">
+          <button id="reset-daily" class="btn-secondary">Reset daily basics</button>
+          <button id="reset-all" class="btn-secondary">Uncheck everything</button>
+        </div>
+      </section>
     </section>
   </main>
 

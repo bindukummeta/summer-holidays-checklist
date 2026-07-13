@@ -9,6 +9,9 @@
   const drawerEl = $("drawer");
   const drawerOverlayEl = $("drawer-overlay");
   const menuToggleEl = $("menu-toggle");
+  const homeEl = $("home");
+  const detailEl = $("detail");
+  const homeTilesEl = $("home-tiles");
   const allDoneEl = $("all-done");
   const heroEmoji = $("hero-emoji");
   const heroBarFill = $("hero-bar-fill");
@@ -17,6 +20,7 @@
   const heroCount = $("hero-count");
 
   let activeFilter = "all"; // "all" | "today" | a category name
+  let currentView = "home"; // "home" | "detail"
   let lastPct = 0;
 
   function loadState() {
@@ -38,6 +42,27 @@
   // Palette reused for user-created categories (cycles through as more are added).
   const CATEGORY_COLORS = [
     "#ffb59e", "#a6cdf5", "#c3b8f0", "#a3ddc4", "#f6c88a", "#f2aecb",
+  ];
+
+  // Home-screen activity tiles. `target` matches a category name so tapping a
+  // tile opens that category's checklist; unmatched tiles are decorative.
+  const HOME_TILES = [
+    { key: "beach",   label: "Beach day",     emoji: "🏖️", target: "🗓️ Activities & days out" },
+    { key: "camping", label: "Camping",       emoji: "⛺", target: "🗓️ Activities & days out" },
+    { key: "museum",  label: "Museum trip",   emoji: "🏛️", target: "🗓️ Activities & days out" },
+    { key: "reading", label: "Reading time",  emoji: "📚", target: "📚 Keep learning" },
+    { key: "picnic",  label: "Park picnic",   emoji: "🧺", target: "🗓️ Activities & days out" },
+    { key: "hiking",  label: "Go exploring",  emoji: "🥾", target: "🌧️ Rainy-day ideas" },
+  ];
+
+  // Photo attribution (Creative Commons via Openverse) shown in the drawer.
+  const PHOTO_CREDITS = [
+    { label: "Beach", by: "Clarkston SCAMP", lic: "CC BY 2.0" },
+    { label: "Camping", by: "KeepActive Australia", lic: "CC BY-SA 4.0" },
+    { label: "Museum", by: "jurvetson", lic: "CC BY 2.0" },
+    { label: "Reading", by: "NIH", lic: "Public Domain" },
+    { label: "Picnic", by: "Ashley MacKinnon", lic: "CC BY 2.0" },
+    { label: "Hiking", by: "Grand Canyon NPS", lic: "CC BY 2.0" },
   ];
 
   // ---- User content stored in localStorage (keeps checklist-data.js untouched) ----
@@ -140,6 +165,7 @@
     const dailyLeft = dailyGroups.reduce((n, g) => n + remainingFor(g, ticks), 0);
 
     const defs = [
+      { key: "home", label: "🏠 Home", home: true },
       { key: "all", label: "All", count: totalLeft },
       { key: "today", label: "Today", count: dailyLeft },
       ...model.map((g) => ({
@@ -154,12 +180,14 @@
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "drawer-link" + (activeFilter === d.key ? " active" : "");
+      const isActive = !d.home && currentView === "detail" && activeFilter === d.key;
+      btn.className = "drawer-link" + (isActive ? " active" : "");
       if (d.color) btn.style.setProperty("--accent", d.color);
 
       const dot = document.createElement("span");
       dot.className = "drawer-dot";
       if (d.color) dot.style.background = d.color;
+      if (d.home) dot.style.background = "transparent";
 
       const label = document.createElement("span");
       label.className = "drawer-label";
@@ -167,17 +195,42 @@
 
       const count = document.createElement("span");
       count.className = "drawer-count";
-      count.textContent = d.count ? d.count : "✓";
+      if (!d.home) count.textContent = d.count ? d.count : "✓";
 
       btn.append(dot, label, count);
       btn.addEventListener("click", () => {
-        activeFilter = d.key;
         closeDrawer();
-        render();
+        if (d.home) {
+          showHome();
+        } else {
+          activeFilter = d.key;
+          showDetail();
+        }
       });
       li.appendChild(btn);
       drawerNavEl.appendChild(li);
     });
+
+    renderDrawerCredits();
+  }
+
+  // Small Creative-Commons photo attribution block at the foot of the drawer.
+  function renderDrawerCredits() {
+    let creditsEl = drawerNavEl.parentElement.querySelector(".drawer-credits");
+    if (creditsEl) return; // build once
+    creditsEl = document.createElement("div");
+    creditsEl.className = "drawer-credits";
+    const h = document.createElement("div");
+    h.className = "drawer-credits-title";
+    h.textContent = "Photo credits";
+    creditsEl.appendChild(h);
+    PHOTO_CREDITS.forEach((c) => {
+      const line = document.createElement("div");
+      line.className = "drawer-credit-line";
+      line.textContent = `${c.label}: ${c.by} · ${c.lic}`;
+      creditsEl.appendChild(line);
+    });
+    drawerEl.appendChild(creditsEl);
   }
 
   function openDrawer() {
@@ -196,6 +249,63 @@
     menuToggleEl.setAttribute("aria-expanded", "false");
     // Hide the overlay after its fade-out so it stops intercepting taps.
     setTimeout(() => { drawerOverlayEl.hidden = true; }, 260);
+  }
+
+  // ---- Home screen (photo activity tiles) ----
+  function categoryExists(name) {
+    return buildModel().some((g) => g.category === name);
+  }
+
+  function renderHome() {
+    homeTilesEl.innerHTML = "";
+    HOME_TILES.forEach((t) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "home-tile";
+
+      const overlay = document.createElement("span");
+      overlay.className = "home-tile-overlay";
+      const emoji = document.createElement("span");
+      emoji.className = "home-tile-emoji";
+      emoji.textContent = t.emoji;
+      const label = document.createElement("span");
+      label.className = "home-tile-label";
+      label.textContent = t.label;
+      overlay.append(emoji, label);
+
+      const img = document.createElement("img");
+      img.className = "home-tile-img";
+      img.src = `images/${t.key}.jpg`;
+      img.alt = t.label;
+      img.loading = "lazy";
+      img.decoding = "async";
+
+      tile.append(img, overlay);
+      tile.addEventListener("click", () => {
+        if (t.target && categoryExists(t.target)) {
+          activeFilter = t.target;
+          showDetail();
+        }
+      });
+      homeTilesEl.appendChild(tile);
+    });
+  }
+
+  function showHome() {
+    currentView = "home";
+    homeEl.classList.remove("hidden");
+    detailEl.classList.add("hidden");
+    renderHome();
+    renderDrawer(buildModel(), loadState().ticks || {});
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function showDetail() {
+    currentView = "detail";
+    homeEl.classList.add("hidden");
+    detailEl.classList.remove("hidden");
+    render();
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   // Should this group show under the current filter?
@@ -444,5 +554,9 @@
     if (e.key === "Escape" && drawerEl.classList.contains("open")) closeDrawer();
   });
 
-  render();
+  // Back button on the detail view returns to the home tiles.
+  $("back-home").addEventListener("click", showHome);
+
+  // Start on the summery home screen.
+  showHome();
 })();
