@@ -30,25 +30,15 @@ body {
 .app-header h1 { margin: 0; font-size: 28px; color: #7a5a48; }
 .subtitle { margin: 4px 0 0; color: #a07a70; font-size: 14px; }
 
-main { max-width: 1120px; margin: 0 auto; padding: 16px 20px 48px; }
+/* One tidy, readable column centered on the page at every width. */
+main { max-width: 640px; margin: 0 auto; padding: 16px 20px 48px; }
 
-/* Hero and chips stay comfortably narrow and centered above the grid. */
-.hero-card { max-width: 720px; margin-left: auto; margin-right: auto; }
-.chips { max-width: 720px; margin-left: auto; margin-right: auto; }
-.actions-card { max-width: 720px; margin-left: auto; margin-right: auto; }
-
-/* Responsive category grid: 1 col on mobile, filling 2–3 cols as width allows. */
+/* Categories stack vertically in a single clean list. */
 .checklist-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin-bottom: 16px;
-}
-@media (min-width: 640px) {
-  .checklist-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  }
 }
 
 .card {
@@ -288,9 +278,8 @@ main { max-width: 1120px; margin: 0 auto; padding: 16px 20px 48px; }
 }
 .add-item-btn:active { transform: scale(0.92); }
 
-/* ---- New-category control (full-width footer tile in the grid) ---- */
+/* ---- New-category control (footer tile at the end of the list) ---- */
 .add-category {
-  grid-column: 1 / -1;
   display: flex;
   gap: 8px;
   padding: 14px;

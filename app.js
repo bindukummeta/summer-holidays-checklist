@@ -162,8 +162,12 @@
       section.className = "checklist-group";
       if (group.daily) section.classList.add("is-daily");
       if (group.color) section.style.setProperty("--accent", group.color);
-      // Cards are expanded by default so they fill the grid; the header toggles
-      // an individual card closed if the user wants a compact overview.
+      // In the combined "all"/"today" views, start each category collapsed so the
+      // single column stays a compact, scannable list. Filtering to one category
+      // (via a chip) shows it expanded.
+      if (activeFilter === "all" || activeFilter === "today") {
+        section.classList.add("collapsed");
+      }
 
       const h = document.createElement("button");
       h.className = "group-head";
