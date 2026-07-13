@@ -34,7 +34,7 @@
 
   // Palette reused for user-created categories (cycles through as more are added).
   const CATEGORY_COLORS = [
-    "#ff8a5c", "#4f9dff", "#7c8cff", "#37d39a", "#ffb020", "#f76fb0",
+    "#ffb59e", "#a6cdf5", "#c3b8f0", "#a3ddc4", "#f6c88a", "#f2aecb",
   ];
 
   // ---- User content stored in localStorage (keeps checklist-data.js untouched) ----
@@ -329,7 +329,7 @@
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const colors = ["#ff8a5c", "#4f9dff", "#37d39a", "#ffb020", "#f76fb0", "#7c8cff"];
+    const colors = ["#ffb59e", "#a6cdf5", "#a3ddc4", "#f6c88a", "#f2aecb", "#c3b8f0"];
     const pieces = Array.from({ length: 120 }, () => ({
       x: canvas.width / 2,
       y: canvas.height / 3,
