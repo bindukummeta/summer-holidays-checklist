@@ -14,9 +14,21 @@
 </head>
 <body>
   <header class="app-header">
+    <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+      <span></span><span></span><span></span>
+    </button>
     <h1>☀️ Summer Checklist</h1>
     <p class="subtitle">Make the most of the school holidays</p>
   </header>
+
+  <div id="drawer-overlay" class="drawer-overlay" hidden></div>
+  <nav id="drawer" class="drawer" aria-label="Categories" aria-hidden="true">
+    <div class="drawer-head">
+      <span class="drawer-title">Categories</span>
+      <button id="drawer-close" class="drawer-close" aria-label="Close menu">✕</button>
+    </div>
+    <ul id="drawer-nav" class="drawer-nav"></ul>
+  </nav>
 
   <main>
     <section class="card hero-card">
@@ -32,8 +44,6 @@
       </div>
       <div id="all-done" class="all-done hidden">🎉 Amazing — you've done it all!</div>
     </section>
-
-    <div class="chips" id="chips"></div>
 
     <div id="checklist" class="checklist-grid"></div>
 

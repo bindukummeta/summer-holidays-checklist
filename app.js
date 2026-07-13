@@ -5,7 +5,10 @@
   const STORAGE_KEY = "summer.state.v1";
 
   const checklistEl = $("checklist");
-  const chipsEl = $("chips");
+  const drawerNavEl = $("drawer-nav");
+  const drawerEl = $("drawer");
+  const drawerOverlayEl = $("drawer-overlay");
+  const menuToggleEl = $("menu-toggle");
   const allDoneEl = $("all-done");
   const heroEmoji = $("hero-emoji");
   const heroBarFill = $("hero-bar-fill");
@@ -123,25 +126,76 @@
     lastPct = pct;
   }
 
-  // Render the filter chips: All, Today (daily), then one per category.
-  function renderChips(model) {
-    chipsEl.innerHTML = "";
+  // Remaining (unticked) count for a group under the current stored ticks.
+  function remainingFor(group, ticks) {
+    return group.items.filter((n) => !ticks[keyFor(group.category, n)]).length;
+  }
+
+  // Render the drawer nav: All, Today (daily), then one entry per category with a
+  // colour dot and a count of items still to do.
+  function renderDrawer(model, ticks) {
+    drawerNavEl.innerHTML = "";
+    const dailyGroups = model.filter((g) => g.daily);
+    const totalLeft = model.reduce((n, g) => n + remainingFor(g, ticks), 0);
+    const dailyLeft = dailyGroups.reduce((n, g) => n + remainingFor(g, ticks), 0);
+
     const defs = [
-      { key: "all", label: "All" },
-      { key: "today", label: "Today" },
-      ...model.map((g) => ({ key: g.category, label: g.category, color: g.color })),
+      { key: "all", label: "All", count: totalLeft },
+      { key: "today", label: "Today", count: dailyLeft },
+      ...model.map((g) => ({
+        key: g.category,
+        label: g.category,
+        color: g.color,
+        count: remainingFor(g, ticks),
+      })),
     ];
+
     defs.forEach((d) => {
-      const chip = document.createElement("button");
-      chip.className = "chip" + (activeFilter === d.key ? " active" : "");
-      chip.textContent = d.label;
-      if (d.color && activeFilter === d.key) chip.style.borderColor = d.color;
-      chip.addEventListener("click", () => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "drawer-link" + (activeFilter === d.key ? " active" : "");
+      if (d.color) btn.style.setProperty("--accent", d.color);
+
+      const dot = document.createElement("span");
+      dot.className = "drawer-dot";
+      if (d.color) dot.style.background = d.color;
+
+      const label = document.createElement("span");
+      label.className = "drawer-label";
+      label.textContent = d.label;
+
+      const count = document.createElement("span");
+      count.className = "drawer-count";
+      count.textContent = d.count ? d.count : "✓";
+
+      btn.append(dot, label, count);
+      btn.addEventListener("click", () => {
         activeFilter = d.key;
+        closeDrawer();
         render();
       });
-      chipsEl.appendChild(chip);
+      li.appendChild(btn);
+      drawerNavEl.appendChild(li);
     });
+  }
+
+  function openDrawer() {
+    drawerOverlayEl.hidden = false;
+    // Force reflow so the opacity transition runs from hidden state.
+    void drawerOverlayEl.offsetWidth;
+    drawerEl.classList.add("open");
+    drawerOverlayEl.classList.add("show");
+    drawerEl.setAttribute("aria-hidden", "false");
+    menuToggleEl.setAttribute("aria-expanded", "true");
+  }
+  function closeDrawer() {
+    drawerEl.classList.remove("open");
+    drawerOverlayEl.classList.remove("show");
+    drawerEl.setAttribute("aria-hidden", "true");
+    menuToggleEl.setAttribute("aria-expanded", "false");
+    // Hide the overlay after its fade-out so it stops intercepting taps.
+    setTimeout(() => { drawerOverlayEl.hidden = true; }, 260);
   }
 
   // Should this group show under the current filter?
@@ -154,7 +208,7 @@
   function render() {
     const ticks = loadState().ticks || {};
     const model = buildModel();
-    renderChips(model);
+    renderDrawer(model, ticks);
     checklistEl.innerHTML = "";
 
     model.filter(groupVisible).forEach((group) => {
@@ -380,6 +434,14 @@
   $("reset-all").addEventListener("click", () => {
     saveState({ ticks: {} });
     render();
+  });
+
+  // Drawer open/close wiring.
+  menuToggleEl.addEventListener("click", openDrawer);
+  $("drawer-close").addEventListener("click", closeDrawer);
+  drawerOverlayEl.addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && drawerEl.classList.contains("open")) closeDrawer();
   });
 
   render();
