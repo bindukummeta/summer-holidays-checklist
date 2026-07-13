@@ -32,6 +32,48 @@
     return [category, name].join("|");
   }
 
+  // Palette reused for user-created categories (cycles through as more are added).
+  const CATEGORY_COLORS = [
+    "#ff8a5c", "#4f9dff", "#7c8cff", "#37d39a", "#ffb020", "#f76fb0",
+  ];
+
+  // ---- User content stored in localStorage (keeps checklist-data.js untouched) ----
+  // customItems: { [category]: string[] }  — extra items added to a category
+  // customCategories: [{ category, color }] — brand-new categories
+  // removed: { [key]: true }               — built-in/custom items hidden by the user
+  function getCustomItems() {
+    return loadState().customItems || {};
+  }
+  function getCustomCategories() {
+    return loadState().customCategories || [];
+  }
+  function getRemoved() {
+    return loadState().removed || {};
+  }
+
+  // Merge built-in CHECKLIST with user categories/items, dropping removed items.
+  // Returns the same group shape render() already expects.
+  function buildModel() {
+    const customItems = getCustomItems();
+    const removed = getRemoved();
+    const groups = [
+      ...CHECKLIST,
+      ...getCustomCategories().map((c) => ({
+        category: c.category,
+        color: c.color,
+        custom: true,
+        items: [],
+      })),
+    ];
+    return groups.map((g) => {
+      const extra = customItems[g.category] || [];
+      const items = [...g.items, ...extra].filter(
+        (name) => !removed[keyFor(g.category, name)]
+      );
+      return Object.assign({}, g, { items });
+    });
+  }
+
   // A friendly line + a growing plant/sun emoji that changes with progress.
   function heroMood(pct) {
     if (pct === 0) return ["🌱", "Let's get started!", "Tick things off as you go"];
@@ -82,12 +124,12 @@
   }
 
   // Render the filter chips: All, Today (daily), then one per category.
-  function renderChips() {
+  function renderChips(model) {
     chipsEl.innerHTML = "";
     const defs = [
       { key: "all", label: "All" },
       { key: "today", label: "Today" },
-      ...CHECKLIST.map((g) => ({ key: g.category, label: g.category, color: g.color })),
+      ...model.map((g) => ({ key: g.category, label: g.category, color: g.color })),
     ];
     defs.forEach((d) => {
       const chip = document.createElement("button");
@@ -111,10 +153,11 @@
 
   function render() {
     const ticks = loadState().ticks || {};
-    renderChips();
+    const model = buildModel();
+    renderChips(model);
     checklistEl.innerHTML = "";
 
-    CHECKLIST.filter(groupVisible).forEach((group) => {
+    model.filter(groupVisible).forEach((group) => {
       const section = document.createElement("div");
       section.className = "checklist-group";
       if (group.daily) section.classList.add("is-daily");
@@ -158,15 +201,127 @@
         const text = document.createElement("span");
         text.className = "check-text";
         text.textContent = name;
-        row.append(box, text);
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "row-del";
+        del.textContent = "✕";
+        del.setAttribute("aria-label", "Delete " + name);
+        del.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          deleteItem(group.category, name);
+        });
+
+        row.append(box, text, del);
         rows.appendChild(row);
       });
+
+      rows.appendChild(buildAddItemRow(group.category));
 
       checklistEl.appendChild(section);
       updateSection(section);
     });
 
+    checklistEl.appendChild(buildAddCategoryControl());
+
     updateProgress();
+  }
+
+  // A row at the bottom of each section for typing a new item into that category.
+  function buildAddItemRow(category) {
+    const wrap = document.createElement("form");
+    wrap.className = "add-item-row";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "add-item-input";
+    input.placeholder = "Add an item…";
+    input.maxLength = 80;
+    const add = document.createElement("button");
+    add.type = "submit";
+    add.className = "add-item-btn";
+    add.textContent = "＋";
+    add.setAttribute("aria-label", "Add item to " + category);
+    wrap.addEventListener("submit", (e) => {
+      e.preventDefault();
+      addItem(category, input.value);
+    });
+    wrap.append(input, add);
+    return wrap;
+  }
+
+  // A control at the very bottom for creating a brand-new category.
+  function buildAddCategoryControl() {
+    const wrap = document.createElement("form");
+    wrap.className = "add-category";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "add-item-input";
+    input.placeholder = "New category name…";
+    input.maxLength = 40;
+    const add = document.createElement("button");
+    add.type = "submit";
+    add.className = "add-category-btn";
+    add.textContent = "＋ New category";
+    wrap.addEventListener("submit", (e) => {
+      e.preventDefault();
+      addCategory(input.value);
+    });
+    wrap.append(input, add);
+    return wrap;
+  }
+
+  // ---- Mutations on user content ----
+  function addItem(category, rawName) {
+    const name = (rawName || "").trim();
+    if (!name) return;
+    const model = buildModel();
+    const group = model.find((g) => g.category === category);
+    if (group && group.items.includes(name)) return; // no duplicates in view
+
+    const customItems = getCustomItems();
+    const list = customItems[category] ? customItems[category].slice() : [];
+    if (!list.includes(name)) list.push(name);
+    customItems[category] = list;
+
+    // If this exact item was previously removed, un-remove it.
+    const removed = getRemoved();
+    delete removed[keyFor(category, name)];
+
+    saveState({ customItems, removed });
+    render();
+  }
+
+  function addCategory(rawName) {
+    const name = (rawName || "").trim();
+    if (!name) return;
+    const existing = buildModel().some((g) => g.category === name);
+    if (existing) return; // don't clash with an existing category name
+
+    const cats = getCustomCategories().slice();
+    const color = CATEGORY_COLORS[cats.length % CATEGORY_COLORS.length];
+    cats.push({ category: name, color });
+    saveState({ customCategories: cats });
+    activeFilter = name;
+    render();
+  }
+
+  function deleteItem(category, name) {
+    // Drop from custom items if present…
+    const customItems = getCustomItems();
+    if (customItems[category]) {
+      customItems[category] = customItems[category].filter((n) => n !== name);
+      if (customItems[category].length === 0) delete customItems[category];
+    }
+    // …and always record it as removed so a built-in also disappears.
+    const removed = getRemoved();
+    removed[keyFor(category, name)] = true;
+    // Clear any tick so progress stays accurate.
+    const ticks = loadState().ticks || {};
+    delete ticks[keyFor(category, name)];
+
+    saveState({ customItems, removed, ticks });
+    render();
   }
 
   // Lightweight confetti burst (no library). Draws to the full-screen canvas.
@@ -210,9 +365,11 @@
   // Clear only the daily-basics ticks (fresh start each day).
   function resetDaily() {
     const ticks = loadState().ticks || {};
-    CHECKLIST.filter((g) => g.daily).forEach((g) => {
-      g.items.forEach((name) => delete ticks[keyFor(g.category, name)]);
-    });
+    buildModel()
+      .filter((g) => g.daily)
+      .forEach((g) => {
+        g.items.forEach((name) => delete ticks[keyFor(g.category, name)]);
+      });
     saveState({ ticks });
     render();
   }
