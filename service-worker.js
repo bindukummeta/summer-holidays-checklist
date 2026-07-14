@@ -1,7 +1,7 @@
 // Bump only when you want to force-drop ALL old caches. Day-to-day you no longer
 // need to touch this: app code (HTML/CSS/JS) is fetched network-first, so new
 // deploys show up on the next online load automatically.
-const CACHE = "summer-v24";
+const CACHE = "summer-v25";
 
 // Static assets that rarely change — safe to serve cache-first.
 const STATIC_ASSETS = [
@@ -94,6 +94,10 @@ self.addEventListener("fetch", (event) => {
   // Let Vercel Web Analytics talk to the network directly — never cache or serve
   // its script/beacons from the SW (analytics is online-only by nature).
   if (new URL(request.url).pathname.startsWith("/_vercel/")) return;
+  // Weather APIs are online-only — let them hit the network directly, never
+  // caching or serving stale forecasts from the SW.
+  const host = new URL(request.url).hostname;
+  if (host === "api.postcodes.io" || host === "api.open-meteo.com") return;
   if (isAppCode(request)) {
     event.respondWith(networkFirst(request));
   } else {

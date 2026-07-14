@@ -107,6 +107,18 @@
             <button id="planner-month" class="planner-toggle-btn" role="tab" aria-selected="false">Month</button>
           </div>
         </div>
+        <form id="weather-form" class="weather-search" role="search">
+          <label class="weather-search-label" for="weather-postcode">📍 Weather by postcode</label>
+          <div class="weather-search-row">
+            <input id="weather-postcode" class="weather-input" type="text"
+                   inputmode="text" autocomplete="postal-code" maxlength="8"
+                   placeholder="e.g. SW1A 1AA" aria-label="UK postcode" />
+            <button id="weather-search-btn" class="btn-secondary" type="submit">Search</button>
+            <button id="weather-clear-btn" class="weather-clear hidden" type="button"
+                    aria-label="Clear weather location">✕</button>
+          </div>
+          <p id="weather-status" class="weather-status" aria-live="polite"></p>
+        </form>
         <div id="planner-grid" class="planner-grid"></div>
         <p id="planner-empty" class="planner-empty hidden">
           No activities planned yet. Open a category and tap 📅 on an activity to add dates.
@@ -122,6 +134,20 @@
         <button id="day-panel-close" class="drawer-close" aria-label="Close">✕</button>
       </div>
       <ul id="day-panel-list" class="day-panel-list"></ul>
+      <form id="day-add-form" class="day-add-form">
+        <label class="day-add-label" for="day-add-category">➕ Add an activity to this day</label>
+        <select id="day-add-category" class="day-add-category"
+                aria-label="Category"></select>
+        <div class="day-add-row">
+          <input id="day-add-name" class="day-add-name" type="text"
+                 list="day-add-items" autocomplete="off"
+                 placeholder="Pick an item or type a new one"
+                 aria-label="Activity name" />
+          <datalist id="day-add-items"></datalist>
+          <button id="day-add-btn" class="day-add-btn" type="submit">Add</button>
+        </div>
+        <p id="day-add-msg" class="day-add-msg" aria-live="polite"></p>
+      </form>
     </aside>
   </main>
 

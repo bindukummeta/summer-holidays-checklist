@@ -27,6 +27,15 @@
   const dayPanelOverlayEl = $("day-panel-overlay");
   const dayPanelTitleEl = $("day-panel-title");
   const dayPanelListEl = $("day-panel-list");
+  const dayAddFormEl = $("day-add-form");
+  const dayAddNameEl = $("day-add-name");
+  const dayAddCategoryEl = $("day-add-category");
+  const dayAddItemsEl = $("day-add-items");
+  const dayAddMsgEl = $("day-add-msg");
+  const weatherFormEl = $("weather-form");
+  const weatherInputEl = $("weather-postcode");
+  const weatherStatusEl = $("weather-status");
+  const weatherClearBtnEl = $("weather-clear-btn");
 
   let activeFilter = "all"; // "all" | a category name
   let currentView = "home"; // "home" | "detail" | "planner"
@@ -658,6 +667,145 @@
     "July", "August", "September", "October", "November", "December"];
   const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+  // ---- Weather (postcode -> forecast) --------------------------------------
+  // Location is persisted; the forecast itself is fetched fresh (online-only)
+  // and kept only in memory, keyed by "YYYY-MM-DD".
+  let weatherByDay = {};   // { iso: { code, max, min } }
+  let weatherLoading = false;
+
+  function getWeatherLoc() {
+    return loadState().weatherLoc || null; // { postcode, place, lat, lon }
+  }
+  function setWeatherLoc(loc) {
+    if (loc) saveState({ weatherLoc: loc });
+    else {
+      const s = loadState();
+      delete s.weatherLoc;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    }
+  }
+
+  // Map a WMO weather code to a friendly emoji + short label.
+  function weatherIcon(code) {
+    if (code === 0) return { icon: "☀️", label: "Clear" };
+    if (code === 1) return { icon: "🌤️", label: "Mainly clear" };
+    if (code === 2) return { icon: "⛅", label: "Partly cloudy" };
+    if (code === 3) return { icon: "☁️", label: "Overcast" };
+    if (code === 45 || code === 48) return { icon: "🌫️", label: "Fog" };
+    if (code >= 51 && code <= 57) return { icon: "🌦️", label: "Drizzle" };
+    if (code >= 61 && code <= 67) return { icon: "🌧️", label: "Rain" };
+    if (code >= 71 && code <= 77) return { icon: "🌨️", label: "Snow" };
+    if (code >= 80 && code <= 82) return { icon: "🌦️", label: "Showers" };
+    if (code === 85 || code === 86) return { icon: "🌨️", label: "Snow showers" };
+    if (code === 95) return { icon: "⛈️", label: "Thunderstorm" };
+    if (code === 96 || code === 99) return { icon: "⛈️", label: "Thunderstorm" };
+    return { icon: "🌡️", label: "" };
+  }
+
+  // Codes that mean "wet" — these badges get a rainy blue tint (regardless of
+  // temperature) so wet days stand out at a glance.
+  function isRainyCode(code) {
+    return (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
+  }
+
+  // Temperature band -> badge colour class (based on the day's high).
+  function tempClass(max) {
+    if (max > 28) return "wx-hot";      // above 28° — red
+    if (max >= 25) return "wx-warm";    // 25–28° — orange
+    if (max >= 20) return "wx-mild";    // 20–25° — yellow
+    return "wx-cool";                   // below 20° — cool blue
+  }
+
+  function setWeatherStatus(msg, kind) {
+    weatherStatusEl.textContent = msg || "";
+    weatherStatusEl.classList.toggle("is-error", kind === "error");
+    weatherStatusEl.classList.toggle("is-ok", kind === "ok");
+  }
+
+  // Resolve a UK postcode to coordinates + place name via postcodes.io.
+  async function lookupPostcode(raw) {
+    const pc = String(raw).trim().replace(/\s+/g, "");
+    if (!pc) throw new Error("Please enter a postcode.");
+    const res = await fetch(
+      "https://api.postcodes.io/postcodes/" + encodeURIComponent(pc)
+    );
+    if (!res.ok) throw new Error("Postcode not found. Please check and try again.");
+    const data = await res.json();
+    const r = data && data.result;
+    if (!r) throw new Error("Postcode not found. Please check and try again.");
+    return {
+      postcode: r.postcode,
+      place: r.admin_district || r.parish || r.region || r.postcode,
+      lat: r.latitude,
+      lon: r.longitude,
+    };
+  }
+
+  // Fetch a daily forecast (Open-Meteo, keyless) and index it by date.
+  async function fetchForecast(lat, lon) {
+    const url =
+      "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+      "&longitude=" + lon +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+      "&timezone=auto&forecast_days=16";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Couldn't load the forecast. Please try again.");
+    const data = await res.json();
+    const d = data && data.daily;
+    const out = {};
+    if (d && Array.isArray(d.time)) {
+      d.time.forEach((iso, i) => {
+        out[iso] = {
+          code: d.weather_code[i],
+          max: Math.round(d.temperature_2m_max[i]),
+          min: Math.round(d.temperature_2m_min[i]),
+        };
+      });
+    }
+    return out;
+  }
+
+  // Load (or reload) the forecast for the saved location, then re-render.
+  async function loadWeather() {
+    const loc = getWeatherLoc();
+    if (!loc) return;
+    weatherLoading = true;
+    setWeatherStatus("Loading forecast for " + loc.place + "…");
+    try {
+      weatherByDay = await fetchForecast(loc.lat, loc.lon);
+      setWeatherStatus("Showing weather for " + loc.place + " (" + loc.postcode + ")", "ok");
+    } catch (err) {
+      weatherByDay = {};
+      setWeatherStatus(err.message || "Couldn't load the forecast.", "error");
+    } finally {
+      weatherLoading = false;
+      if (currentView === "planner") renderPlanner();
+    }
+  }
+
+  // Handle a postcode search: resolve, persist, fetch, render.
+  async function searchWeather(raw) {
+    setWeatherStatus("Finding postcode…");
+    try {
+      const loc = await lookupPostcode(raw);
+      setWeatherLoc(loc);
+      weatherInputEl.value = loc.postcode;
+      weatherClearBtnEl.classList.remove("hidden");
+      await loadWeather();
+    } catch (err) {
+      setWeatherStatus(err.message || "Something went wrong.", "error");
+    }
+  }
+
+  function clearWeather() {
+    setWeatherLoc(null);
+    weatherByDay = {};
+    weatherInputEl.value = "";
+    weatherClearBtnEl.classList.add("hidden");
+    setWeatherStatus("");
+    if (currentView === "planner") renderPlanner();
+  }
+
   function renderPlanner() {
     $("planner-week").classList.toggle("is-active", plannerMode === "week");
     $("planner-week").setAttribute("aria-selected", String(plannerMode === "week"));
@@ -724,6 +872,27 @@
       : String(day.getDate());
     cell.appendChild(head);
 
+    // Weather badge (only for days the forecast covers).
+    const wx = weatherByDay[iso];
+    if (wx) {
+      const info = weatherIcon(wx.code);
+      const badge = document.createElement("span");
+      // Rain wins over the temperature colour; otherwise band by the high temp.
+      const tone = isRainyCode(wx.code) ? "wx-rain" : tempClass(wx.max);
+      badge.className = "planner-weather " + tone;
+      badge.title = info.label
+        ? info.label + " · " + wx.max + "° / " + wx.min + "°"
+        : wx.max + "° / " + wx.min + "°";
+      const ic = document.createElement("span");
+      ic.className = "planner-weather-icon";
+      ic.textContent = info.icon;
+      const tp = document.createElement("span");
+      tp.className = "planner-weather-temp";
+      tp.textContent = wx.max + "° / " + wx.min + "°";
+      badge.append(ic, tp);
+      cell.appendChild(badge);
+    }
+
     const items = index[iso] || [];
     const chips = document.createElement("span");
     chips.className = "planner-day-chips";
@@ -749,10 +918,81 @@
     return cell;
   }
 
+  // The day currently shown in the panel, so the add-activity form knows which
+  // date to plan the new activity on.
+  let dayPanelDate = null;
+
+  // Fill the day-panel category <select> from the current model (built-in +
+  // custom), preserving the previously chosen category when possible.
+  function populateDayAddCategories() {
+    const prev = dayAddCategoryEl.value;
+    dayAddCategoryEl.innerHTML = "";
+    buildModel().forEach((g) => {
+      const opt = document.createElement("option");
+      opt.value = g.category;
+      opt.textContent = g.category;
+      dayAddCategoryEl.appendChild(opt);
+    });
+    if (prev) dayAddCategoryEl.value = prev;
+  }
+
+  // Fill the name box's <datalist> with the existing items of the currently
+  // selected category, so the user can pick one (or still type a new one).
+  function populateDayAddItems() {
+    dayAddItemsEl.innerHTML = "";
+    const cat = dayAddCategoryEl.value;
+    const group = buildModel().find((g) => g.category === cat);
+    if (!group) return;
+    group.items.forEach((it) => {
+      const opt = document.createElement("option");
+      opt.value = itemName(it);
+      dayAddItemsEl.appendChild(opt);
+    });
+  }
+
+  // Add an activity (creating it in its category if new) and plan it on `iso`.
+  // Unlike addItem(), this also dates an already-existing item and does not
+  // re-render the detail view.
+  function addActivityOnDay(category, rawName, iso) {
+    const name = (rawName || "").trim();
+    if (!name) return { ok: false, msg: "Please type an activity name." };
+    if (!category) return { ok: false, msg: "Please choose a category." };
+
+    const model = buildModel();
+    const group = model.find((g) => g.category === category);
+    const exists = group && group.items.some((it) => itemName(it) === name);
+
+    if (!exists) {
+      const customItems = getCustomItems();
+      const list = customItems[category] ? customItems[category].slice() : [];
+      list.push(name);
+      customItems[category] = list;
+      const removed = getRemoved();
+      delete removed[keyFor(category, name)];
+      saveState({ customItems, removed });
+    }
+
+    const id = keyFor(category, name);
+    const dates = getItemDates(id);
+    const already = dates.includes(iso);
+    if (!already) setItemDates(id, dates.concat(iso));
+    return {
+      ok: true,
+      already,
+      msg: already
+        ? "\u201c" + name + "\u201d is already on this day."
+        : "Added \u201c" + name + "\u201d.",
+    };
+  }
+
   function openDayPanel(day, items) {
+    dayPanelDate = day;
     dayPanelTitleEl.textContent = parseYmd(ymd(day)).toLocaleDateString("en-GB", {
       weekday: "long", day: "numeric", month: "long",
     });
+    populateDayAddCategories();
+    populateDayAddItems();
+    dayAddMsgEl.textContent = "";
     dayPanelListEl.innerHTML = "";
     if (!items.length) {
       const li = document.createElement("li");
@@ -839,6 +1079,13 @@
     homeEl.classList.add("hidden");
     detailEl.classList.add("hidden");
     plannerEl.classList.remove("hidden");
+    // Restore a saved postcode and refresh its forecast on open.
+    const loc = getWeatherLoc();
+    if (loc) {
+      weatherInputEl.value = loc.postcode;
+      weatherClearBtnEl.classList.remove("hidden");
+      if (!weatherLoading) loadWeather();
+    }
     renderPlanner();
     renderDrawer(buildModel(), loadState().ticks || {});
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -1488,6 +1735,39 @@
   });
   $("day-panel-close").addEventListener("click", closeDayPanel);
   dayPanelOverlayEl.addEventListener("click", closeDayPanel);
+
+  // Add an activity to the day currently shown in the panel.
+  // Switching category clears any leftover item picked from the old category
+  // and refreshes the suggestion list to the new category's items.
+  dayAddCategoryEl.addEventListener("change", () => {
+    dayAddNameEl.value = "";
+    dayAddMsgEl.textContent = "";
+    dayAddMsgEl.classList.remove("is-error");
+    populateDayAddItems();
+  });
+  dayAddFormEl.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!dayPanelDate) return;
+    const iso = ymd(dayPanelDate);
+    const res = addActivityOnDay(dayAddCategoryEl.value, dayAddNameEl.value, iso);
+    dayAddMsgEl.textContent = res.msg || "";
+    dayAddMsgEl.classList.toggle("is-error", !res.ok);
+    if (res.ok && !res.already) {
+      dayAddNameEl.value = "";
+      // Refresh the panel list and the calendar so the new chip shows at once.
+      openDayPanel(dayPanelDate, buildDayIndex()[iso] || []);
+      dayAddMsgEl.textContent = res.msg;
+      renderPlanner();
+    }
+    dayAddNameEl.focus();
+  });
+
+  // Weather postcode search (Enter or Search button both submit the form).
+  weatherFormEl.addEventListener("submit", (e) => {
+    e.preventDefault();
+    searchWeather(weatherInputEl.value);
+  });
+  weatherClearBtnEl.addEventListener("click", clearWeather);
 
   // Clear yesterday's daily basics on the first open of a new day, then start on
   // the summery home screen.
