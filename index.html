@@ -89,6 +89,40 @@
         </div>
       </section>
     </section>
+
+    <!-- PLANNER VIEW: calendar of activities the user has dated -->
+    <section id="planner" class="planner-view hidden">
+      <button id="planner-back" class="back-home">‹ Back to activities</button>
+
+      <section class="card planner-card">
+        <div class="planner-bar">
+          <div class="planner-nav">
+            <button id="planner-prev" class="planner-arrow" aria-label="Previous">‹</button>
+            <button id="planner-today" class="btn-secondary">Today</button>
+            <button id="planner-next" class="planner-arrow" aria-label="Next">›</button>
+          </div>
+          <h2 id="planner-title" class="planner-title" aria-live="polite">This week</h2>
+          <div class="planner-toggle" role="tablist" aria-label="Calendar view">
+            <button id="planner-week" class="planner-toggle-btn is-active" role="tab" aria-selected="true">Week</button>
+            <button id="planner-month" class="planner-toggle-btn" role="tab" aria-selected="false">Month</button>
+          </div>
+        </div>
+        <div id="planner-grid" class="planner-grid"></div>
+        <p id="planner-empty" class="planner-empty hidden">
+          No activities planned yet. Open a category and tap 📅 on an activity to add dates.
+        </p>
+      </section>
+    </section>
+
+    <!-- Day detail panel (activities planned for one day) -->
+    <div id="day-panel-overlay" class="day-panel-overlay hidden"></div>
+    <aside id="day-panel" class="day-panel hidden" aria-hidden="true" aria-label="Day details">
+      <div class="day-panel-head">
+        <h3 id="day-panel-title" class="day-panel-title"></h3>
+        <button id="day-panel-close" class="drawer-close" aria-label="Close">✕</button>
+      </div>
+      <ul id="day-panel-list" class="day-panel-list"></ul>
+    </aside>
   </main>
 
   <canvas id="confetti" class="confetti"></canvas>

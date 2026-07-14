@@ -591,6 +591,312 @@ main { margin: 0 auto; padding: 16px 20px 48px; }
   background: color-mix(in srgb, #e39aa6 20%, transparent);
 }
 
+/* ---- Plan-a-date control on each item row ---- */
+.row-date-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.row-date {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.row-date:hover, .row-date:active, .row-date.has-dates {
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.row-date-count {
+  min-width: 16px;
+  height: 16px;
+  margin-left: -6px;
+  margin-top: -12px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  color: #2f5c4a;
+  background: color-mix(in srgb, var(--accent) 45%, var(--card));
+  border-radius: 999px;
+}
+.row-date-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: min(260px, 78vw);
+  padding: 12px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  cursor: default;
+}
+.row-date-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg, #fff);
+}
+.row-date-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.row-date-empty {
+  font-size: 13px;
+  color: var(--muted);
+}
+.row-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2f5c4a;
+  background: color-mix(in srgb, var(--accent) 22%, var(--card));
+  border-radius: 999px;
+}
+.row-date-chip-del {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+  color: #2f5c4a;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.row-date-chip-del:hover { opacity: 1; }
+
+/* ---- My Planner (calendar view) ---- */
+.planner-card { padding: 14px; }
+.planner-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.planner-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.planner-arrow {
+  width: 34px;
+  height: 34px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.planner-arrow:hover { border-color: #a6cdf5; }
+.planner-title {
+  flex: 1;
+  min-width: 140px;
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+}
+.planner-toggle {
+  display: inline-flex;
+  padding: 3px;
+  background: color-mix(in srgb, #a6cdf5 18%, var(--card));
+  border-radius: 999px;
+}
+.planner-toggle-btn {
+  padding: 6px 14px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.planner-toggle-btn.is-active {
+  color: #234;
+  background: var(--card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.planner-empty {
+  margin: 16px 4px 4px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Week view: a single responsive column of day rows. */
+.planner-grid.planner-week {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+/* Month view: 7-column grid with weekday headers. */
+.planner-grid.planner-month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.planner-dow {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  padding-bottom: 2px;
+}
+
+.planner-day {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 10px;
+  text-align: left;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.planner-day:hover { border-color: #a6cdf5; }
+.planner-day.is-today {
+  border-color: #3aa7e0;
+  background: color-mix(in srgb, #a6cdf5 12%, var(--card));
+}
+.planner-day.has-items { border-color: color-mix(in srgb, #a6cdf5 60%, var(--border)); }
+.planner-day-head {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+.planner-day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.planner-chip {
+  max-width: 100%;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2f4858;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.planner-chip-more {
+  color: var(--muted);
+  background: transparent;
+  font-weight: 800;
+}
+
+/* Month cells are square-ish and more compact. */
+.planner-month .planner-day {
+  min-height: 74px;
+  padding: 6px;
+  gap: 3px;
+}
+.planner-month .planner-day-head { font-size: 12px; }
+.planner-month .planner-chip {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+.planner-day.is-other-month { opacity: 0.4; }
+
+/* Day detail panel (slides up from the bottom). */
+.day-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.35);
+}
+.day-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 61;
+  width: min(560px, 100%);
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 16px 18px 24px;
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+}
+.day-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.day-panel-title { margin: 0; font-size: 18px; }
+.day-panel-list { list-style: none; margin: 0; padding: 0; }
+.day-panel-empty { color: var(--muted); font-size: 14px; }
+.day-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.day-panel-item:last-child { border-bottom: none; }
+.day-panel-dot {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+.day-panel-item-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.day-panel-item-text { font-weight: 700; font-size: 15px; }
+.day-panel-item-cat { font-size: 12px; color: var(--muted); }
+.day-panel-remove {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b05a66;
+  background: color-mix(in srgb, #e39aa6 18%, transparent);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.day-panel-remove:hover { background: color-mix(in srgb, #e39aa6 30%, transparent); }
+
 /* ---- Delete control on a custom category's section header ---- */
 .sec-del {
   flex-shrink: 0;

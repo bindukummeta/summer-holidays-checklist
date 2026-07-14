@@ -19,9 +19,20 @@
   const heroSub = $("hero-sub");
   const heroCount = $("hero-count");
   const heroEarned = $("hero-earned");
+  const plannerEl = $("planner");
+  const plannerGridEl = $("planner-grid");
+  const plannerTitleEl = $("planner-title");
+  const plannerEmptyEl = $("planner-empty");
+  const dayPanelEl = $("day-panel");
+  const dayPanelOverlayEl = $("day-panel-overlay");
+  const dayPanelTitleEl = $("day-panel-title");
+  const dayPanelListEl = $("day-panel-list");
 
   let activeFilter = "all"; // "all" | a category name
-  let currentView = "home"; // "home" | "detail"
+  let currentView = "home"; // "home" | "detail" | "planner"
+  // Planner state: which mode and which day anchors the visible range.
+  let plannerMode = "week"; // "week" | "month"
+  let plannerAnchor = new Date();
   let lastPct = 0;
   // Object URLs created for custom tile photos; revoked on each home re-render.
   let tilePhotoUrls = [];
@@ -163,13 +174,14 @@
   // Tile shape flags drive the staggered mosaic on the home screen:
   //   wide: true  → spans the full row as a "featured" banner
   //   tall: true  → rises taller than its neighbour so tiles brick/stagger
-  // Daily basics leads as a hero banner and Back to school closes as one; every
-  // other category (Chores included) sits in the staggered 2-column mosaic,
-  // alternating tall/short so the seams offset.
+  // My Planner leads as a hero banner and Back to school closes as one; every
+  // other category (Daily basics and Chores included) sits in the staggered
+  // 2-column mosaic, alternating tall/short so the seams offset.
   const HOME_TILES = [
-    { key: "daily",        label: "Daily basics",     emoji: "🎯", target: "🎯 Daily basics", wide: true },
-    { key: "chores",       label: "Chores",           emoji: "💰", target: "💰 Chores", tall: true },
-    { key: "activities",   label: "Days out",         emoji: "🗓️", target: "🗓️ Activities & days out" },
+    { key: "planner",      label: "Summer 2026 Planner", emoji: "📅", planner: true, wide: true },
+    { key: "daily",        label: "Daily basics",     emoji: "🎯", target: "🎯 Daily basics", tall: true },
+    { key: "chores",       label: "Chores",           emoji: "💰", target: "💰 Chores" },
+    { key: "activities",   label: "Days out",         emoji: "🗓️", target: "🗓️ Activities & days out", tall: true },
     { key: "rainy",        label: "Rainy-day ideas",  emoji: "🌧️", target: "🌧️ Rainy-day ideas" },
     { key: "daybag",       label: "Day-out bag",      emoji: "🧳", target: "🧳 Day-out bag", tall: true },
     { key: "learning",     label: "Keep learning",    emoji: "📚", target: "📚 Keep learning" },
@@ -198,6 +210,7 @@
     { label: "Day-out bag", by: "ambermb (Wikimedia)", lic: "CC0" },
     { label: "Keep learning", by: "Direct Media (StockSnap)", lic: "CC0" },
     { label: "Back to school", by: "Artsy Crafty (StockSnap)", lic: "CC0" },
+    { label: "Summer 2026 Planner", by: "Beauty and Fashion (StockSnap)", lic: "CC0" },
   ];
 
   // ---- User content stored in localStorage (keeps checklist-data.js untouched) ----
@@ -212,6 +225,23 @@
   }
   function getRemoved() {
     return loadState().removed || {};
+  }
+
+  // dates: { [key]: string[] } — planned "YYYY-MM-DD" days assigned to an item,
+  // keyed by keyFor(category, name) just like ticks. An item can hold several.
+  function getDates() {
+    return loadState().dates || {};
+  }
+  function getItemDates(id) {
+    const list = getDates()[id];
+    return Array.isArray(list) ? list.slice().sort() : [];
+  }
+  function setItemDates(id, list) {
+    const dates = getDates();
+    const clean = Array.from(new Set(list)).filter(Boolean).sort();
+    if (clean.length) dates[id] = clean;
+    else delete dates[id];
+    saveState({ dates });
   }
 
   // Merge built-in CHECKLIST with user categories/items, dropping removed items.
@@ -324,6 +354,7 @@
 
     const defs = [
       { key: "home", label: "🏠 Home", home: true },
+      { key: "planner", label: "📅 My Planner", planner: true },
       { key: "all", label: "All", count: totalLeft },
       ...model.map((g) => ({
         key: g.category,
@@ -337,14 +368,16 @@
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      const isActive = !d.home && currentView === "detail" && activeFilter === d.key;
+      const isActive =
+        (!d.home && !d.planner && currentView === "detail" && activeFilter === d.key) ||
+        (d.planner && currentView === "planner");
       btn.className = "drawer-link" + (isActive ? " active" : "");
       if (d.color) btn.style.setProperty("--accent", d.color);
 
       const dot = document.createElement("span");
       dot.className = "drawer-dot";
       if (d.color) dot.style.background = d.color;
-      if (d.home) dot.style.background = "transparent";
+      if (d.home || d.planner) dot.style.background = "transparent";
 
       const label = document.createElement("span");
       label.className = "drawer-label";
@@ -352,13 +385,15 @@
 
       const count = document.createElement("span");
       count.className = "drawer-count";
-      if (!d.home) count.textContent = d.count ? d.count : "✓";
+      if (!d.home && !d.planner) count.textContent = d.count ? d.count : "✓";
 
       btn.append(dot, label, count);
       btn.addEventListener("click", () => {
         closeDrawer();
         if (d.home) {
           showHome();
+        } else if (d.planner) {
+          showPlanner();
         } else {
           activeFilter = d.key;
           showDetail();
@@ -539,7 +574,9 @@
 
       tile.append(img, overlay, controls);
       tile.addEventListener("click", () => {
-        if (t.target && categoryExists(t.target)) {
+        if (t.planner) {
+          showPlanner();
+        } else if (t.target && categoryExists(t.target)) {
           activeFilter = t.target;
           showDetail();
         }
@@ -559,10 +596,230 @@
     });
   }
 
+  // ---- Planner / calendar --------------------------------------------------
+  // Local-date helpers that never touch UTC (avoids off-by-one day shifts).
+  function ymd(d) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function parseYmd(iso) {
+    const [y, m, dd] = String(iso).split("-").map(Number);
+    return new Date(y, m - 1, dd);
+  }
+  function addDays(d, n) {
+    const c = new Date(d);
+    c.setDate(c.getDate() + n);
+    return c;
+  }
+  // Monday-based start of the week containing d.
+  function startOfWeek(d) {
+    const c = new Date(d);
+    const day = (c.getDay() + 6) % 7; // Mon=0 … Sun=6
+    return addDays(c, -day);
+  }
+  function sameYmd(a, b) {
+    return ymd(a) === ymd(b);
+  }
+
+  // Invert the stored dates into { "YYYY-MM-DD": [{ id, name, category, color }] },
+  // resolving each item's category colour from the current model.
+  function buildDayIndex() {
+    const model = buildModel();
+    const colorByKey = {};
+    const nameByKey = {};
+    const catByKey = {};
+    model.forEach((g) => {
+      g.items.forEach((it) => {
+        const nm = itemName(it);
+        const k = keyFor(g.category, nm);
+        colorByKey[k] = g.color;
+        nameByKey[k] = nm;
+        catByKey[k] = g.category;
+      });
+    });
+    const index = {};
+    const dates = getDates();
+    Object.keys(dates).forEach((k) => {
+      // Skip items that no longer exist in the model (deleted categories/items).
+      if (!(k in nameByKey)) return;
+      (dates[k] || []).forEach((iso) => {
+        (index[iso] = index[iso] || []).push({
+          id: k,
+          name: nameByKey[k],
+          category: catByKey[k],
+          color: colorByKey[k] || "#a6cdf5",
+        });
+      });
+    });
+    return index;
+  }
+
+  const MONTHS = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  function renderPlanner() {
+    $("planner-week").classList.toggle("is-active", plannerMode === "week");
+    $("planner-week").setAttribute("aria-selected", String(plannerMode === "week"));
+    $("planner-month").classList.toggle("is-active", plannerMode === "month");
+    $("planner-month").setAttribute("aria-selected", String(plannerMode === "month"));
+
+    const index = buildDayIndex();
+    const hasAny = Object.keys(index).length > 0;
+    plannerEmptyEl.classList.toggle("hidden", hasAny);
+
+    if (plannerMode === "week") renderWeek(index);
+    else renderMonth(index);
+  }
+
+  function renderWeek(index) {
+    const start = startOfWeek(plannerAnchor);
+    const end = addDays(start, 6);
+    plannerTitleEl.textContent =
+      start.getDate() + " " + MONTHS[start.getMonth()].slice(0, 3) +
+      " – " + end.getDate() + " " + MONTHS[end.getMonth()].slice(0, 3);
+
+    plannerGridEl.className = "planner-grid planner-week";
+    plannerGridEl.innerHTML = "";
+    for (let i = 0; i < 7; i++) {
+      const day = addDays(start, i);
+      plannerGridEl.appendChild(dayCell(day, index, true));
+    }
+  }
+
+  function renderMonth(index) {
+    const anchor = plannerAnchor;
+    plannerTitleEl.textContent = MONTHS[anchor.getMonth()] + " " + anchor.getFullYear();
+
+    plannerGridEl.className = "planner-grid planner-month";
+    plannerGridEl.innerHTML = "";
+    WEEKDAYS.forEach((w) => {
+      const h = document.createElement("div");
+      h.className = "planner-dow";
+      h.textContent = w;
+      plannerGridEl.appendChild(h);
+    });
+    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const gridStart = startOfWeek(first);
+    for (let i = 0; i < 42; i++) {
+      const day = addDays(gridStart, i);
+      const cell = dayCell(day, index, false);
+      if (day.getMonth() !== anchor.getMonth()) cell.classList.add("is-other-month");
+      plannerGridEl.appendChild(cell);
+    }
+  }
+
+  // One day cell. `showWeekday` labels the day with its name (week view).
+  function dayCell(day, index, showWeekday) {
+    const iso = ymd(day);
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "planner-day";
+    if (sameYmd(day, new Date())) cell.classList.add("is-today");
+
+    const head = document.createElement("span");
+    head.className = "planner-day-head";
+    head.textContent = showWeekday
+      ? WEEKDAYS[(day.getDay() + 6) % 7] + " " + day.getDate()
+      : String(day.getDate());
+    cell.appendChild(head);
+
+    const items = index[iso] || [];
+    const chips = document.createElement("span");
+    chips.className = "planner-day-chips";
+    items.slice(0, showWeekday ? 8 : 3).forEach((it) => {
+      const chip = document.createElement("span");
+      chip.className = "planner-chip";
+      chip.style.background = "color-mix(in srgb, " + it.color + " 30%, #fff)";
+      chip.style.borderColor = it.color;
+      chip.textContent = it.name;
+      chips.appendChild(chip);
+    });
+    const hidden = items.length - (showWeekday ? 8 : 3);
+    if (hidden > 0) {
+      const more = document.createElement("span");
+      more.className = "planner-chip planner-chip-more";
+      more.textContent = "+" + hidden + " more";
+      chips.appendChild(more);
+    }
+    cell.appendChild(chips);
+
+    if (items.length) cell.classList.add("has-items");
+    cell.addEventListener("click", () => openDayPanel(day, items));
+    return cell;
+  }
+
+  function openDayPanel(day, items) {
+    dayPanelTitleEl.textContent = parseYmd(ymd(day)).toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long",
+    });
+    dayPanelListEl.innerHTML = "";
+    if (!items.length) {
+      const li = document.createElement("li");
+      li.className = "day-panel-empty";
+      li.textContent = "Nothing planned for this day.";
+      dayPanelListEl.appendChild(li);
+    } else {
+      const iso = ymd(day);
+      items.forEach((it) => {
+        const li = document.createElement("li");
+        li.className = "day-panel-item";
+        const dot = document.createElement("span");
+        dot.className = "day-panel-dot";
+        dot.style.background = it.color;
+        const txt = document.createElement("span");
+        txt.className = "day-panel-item-text";
+        txt.textContent = it.name;
+        const cat = document.createElement("span");
+        cat.className = "day-panel-item-cat";
+        cat.textContent = it.category;
+        const meta = document.createElement("span");
+        meta.className = "day-panel-item-meta";
+        meta.append(txt, cat);
+        const rm = document.createElement("button");
+        rm.type = "button";
+        rm.className = "day-panel-remove";
+        rm.textContent = "Remove";
+        rm.setAttribute("aria-label", "Remove " + it.name + " from this day");
+        rm.addEventListener("click", () => {
+          setItemDates(it.id, getItemDates(it.id).filter((d) => d !== iso));
+          // Re-render both the panel and the grid so counts stay in sync.
+          const fresh = buildDayIndex()[iso] || [];
+          openDayPanel(day, fresh);
+          renderPlanner();
+        });
+        li.append(dot, meta, rm);
+        dayPanelListEl.appendChild(li);
+      });
+    }
+    dayPanelEl.classList.remove("hidden");
+    dayPanelEl.setAttribute("aria-hidden", "false");
+    dayPanelOverlayEl.classList.remove("hidden");
+  }
+
+  function closeDayPanel() {
+    dayPanelEl.classList.add("hidden");
+    dayPanelEl.setAttribute("aria-hidden", "true");
+    dayPanelOverlayEl.classList.add("hidden");
+  }
+
+  // Move the visible range by one week or month.
+  function shiftPlanner(dir) {
+    if (plannerMode === "week") {
+      plannerAnchor = addDays(plannerAnchor, dir * 7);
+    } else {
+      plannerAnchor = new Date(
+        plannerAnchor.getFullYear(), plannerAnchor.getMonth() + dir, 1
+      );
+    }
+    renderPlanner();
+  }
+
   function showHome() {
     currentView = "home";
     homeEl.classList.remove("hidden");
     detailEl.classList.add("hidden");
+    plannerEl.classList.add("hidden");
     renderHome();
     renderDrawer(buildModel(), loadState().ticks || {});
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -572,7 +829,18 @@
     currentView = "detail";
     homeEl.classList.add("hidden");
     detailEl.classList.remove("hidden");
+    plannerEl.classList.add("hidden");
     render();
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function showPlanner() {
+    currentView = "planner";
+    homeEl.classList.add("hidden");
+    detailEl.classList.add("hidden");
+    plannerEl.classList.remove("hidden");
+    renderPlanner();
+    renderDrawer(buildModel(), loadState().ticks || {});
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -685,6 +953,8 @@
         text.className = "check-text";
         text.textContent = name;
 
+        const dateControl = buildDateControl(id, name);
+
         const del = document.createElement("button");
         del.type = "button";
         del.className = "row-del";
@@ -700,9 +970,9 @@
           const badge = document.createElement("span");
           badge.className = "reward-badge";
           badge.textContent = formatMoney(reward);
-          row.append(box, text, badge, del);
+          row.append(box, text, badge, dateControl, del);
         } else {
-          row.append(box, text, del);
+          row.append(box, text, dateControl, del);
         }
         rows.appendChild(row);
       });
@@ -716,6 +986,137 @@
     checklistEl.appendChild(buildAddCategoryControl());
 
     updateProgress();
+  }
+
+  // Close every open date popover (used for outside-click / Escape dismissal).
+  function closeAllDatePopovers() {
+    document
+      .querySelectorAll(".row-date-pop:not(.hidden)")
+      .forEach((p) => p.classList.add("hidden"));
+    document
+      .querySelectorAll('.row-date[aria-expanded="true"]')
+      .forEach((b) => b.setAttribute("aria-expanded", "false"));
+  }
+
+  // Register once: dismiss any open date popover on an outside click or Escape,
+  // so the user can close it without having to pick a date.
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest || !e.target.closest(".row-date-wrap")) {
+      closeAllDatePopovers();
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllDatePopovers();
+  });
+
+  // Build the 📅 date control for one item row: a toggle button showing how many
+  // days are planned, plus an inline popover to add/remove dates. State is stored
+  // via setItemDates(id, …). The row is a <label>, so every interactive element
+  // here stops propagation + prevents default to avoid toggling the checkbox.
+  function buildDateControl(id, name) {
+    const wrap = document.createElement("span");
+    wrap.className = "row-date-wrap";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "row-date";
+    btn.setAttribute("aria-label", "Plan dates for " + name);
+    btn.setAttribute("aria-expanded", "false");
+
+    const count = document.createElement("span");
+    count.className = "row-date-count";
+
+    const pop = document.createElement("span");
+    pop.className = "row-date-pop hidden";
+
+    const refreshCount = () => {
+      const n = getItemDates(id).length;
+      btn.textContent = "📅";
+      btn.classList.toggle("has-dates", n > 0);
+      count.textContent = n ? String(n) : "";
+      count.classList.toggle("hidden", n === 0);
+    };
+
+    const renderChips = () => {
+      pop.innerHTML = "";
+
+      const dates = getItemDates(id);
+
+      // Native date picker: choosing a date assigns it immediately and closes the
+      // popover — no separate "add" button. Prepopulated with the latest date so
+      // reopening shows what's planned.
+      const input = document.createElement("input");
+      input.type = "date";
+      input.className = "row-date-input";
+      input.setAttribute("aria-label", "Pick a date for " + name);
+      if (dates.length) input.value = dates[dates.length - 1];
+      input.addEventListener("change", (e) => {
+        e.stopPropagation();
+        const val = input.value;
+        if (!val) return;
+        setItemDates(id, getItemDates(id).concat(val));
+        refreshCount();
+        // Assign-and-close: the count badge shows the result; reopening rebuilds
+        // the chip list.
+        closePop();
+      });
+
+      const list = document.createElement("span");
+      list.className = "row-date-chips";
+      if (!dates.length) {
+        const empty = document.createElement("span");
+        empty.className = "row-date-empty";
+        empty.textContent = "No dates planned yet.";
+        list.appendChild(empty);
+      } else {
+        dates.forEach((iso) => {
+          const chip = document.createElement("span");
+          chip.className = "row-date-chip";
+          const lbl = document.createElement("span");
+          lbl.textContent = formatDateLabel(iso);
+          const rm = document.createElement("button");
+          rm.type = "button";
+          rm.className = "row-date-chip-del";
+          rm.textContent = "✕";
+          rm.setAttribute("aria-label", "Remove " + formatDateLabel(iso));
+          rm.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setItemDates(id, getItemDates(id).filter((d) => d !== iso));
+            refreshCount();
+            renderChips();
+          });
+          chip.append(lbl, rm);
+          list.appendChild(chip);
+        });
+      }
+
+      pop.append(input, list);
+    };
+
+    const closePop = () => {
+      pop.classList.add("hidden");
+      btn.setAttribute("aria-expanded", "false");
+    };
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const willOpen = pop.classList.contains("hidden");
+      // Close any other open date popovers first (and this one, so toggling shut works).
+      closeAllDatePopovers();
+      if (willOpen) {
+        renderChips();
+        pop.classList.remove("hidden");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+    // Clicks inside the popover shouldn't toggle the row checkbox.
+    pop.addEventListener("click", (e) => e.stopPropagation());
+
+    refreshCount();
+    wrap.append(btn, count, pop);
+    return wrap;
   }
 
   // A row at the bottom of each section for typing a new item into that category.
@@ -874,8 +1275,11 @@
     // Clear any tick so progress stays accurate.
     const ticks = loadState().ticks || {};
     delete ticks[keyFor(category, name)];
+    // Drop any planned dates for the item too.
+    const dates = getDates();
+    delete dates[keyFor(category, name)];
 
-    saveState({ customItems, removed, ticks });
+    saveState({ customItems, removed, ticks, dates });
     render();
   }
 
@@ -948,6 +1352,18 @@
     const d = new Date();
     const pad = (n) => String(n).padStart(2, "0");
     return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  // Short, friendly label for a "YYYY-MM-DD" day, e.g. "Sat 2 Aug".
+  function formatDateLabel(iso) {
+    const parts = String(iso).split("-").map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) return iso;
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    return d.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
   }
 
   // On the first open of a new day, automatically clear the daily-basics ticks so
@@ -1053,6 +1469,25 @@
 
   // Back button on the detail view returns to the home tiles.
   $("back-home").addEventListener("click", showHome);
+
+  // ---- Planner controls ----
+  $("planner-back").addEventListener("click", showHome);
+  $("planner-prev").addEventListener("click", () => shiftPlanner(-1));
+  $("planner-next").addEventListener("click", () => shiftPlanner(1));
+  $("planner-today").addEventListener("click", () => {
+    plannerAnchor = new Date();
+    renderPlanner();
+  });
+  $("planner-week").addEventListener("click", () => {
+    plannerMode = "week";
+    renderPlanner();
+  });
+  $("planner-month").addEventListener("click", () => {
+    plannerMode = "month";
+    renderPlanner();
+  });
+  $("day-panel-close").addEventListener("click", closeDayPanel);
+  dayPanelOverlayEl.addEventListener("click", closeDayPanel);
 
   // Clear yesterday's daily basics on the first open of a new day, then start on
   // the summery home screen.

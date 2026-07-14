@@ -1,7 +1,7 @@
 // Bump only when you want to force-drop ALL old caches. Day-to-day you no longer
 // need to touch this: app code (HTML/CSS/JS) is fetched network-first, so new
 // deploys show up on the next online load automatically.
-const CACHE = "summer-v23";
+const CACHE = "summer-v24";
 
 // Static assets that rarely change — safe to serve cache-first.
 const STATIC_ASSETS = [
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   "./images/learning.jpg",
   "./images/backtoschool.jpg",
   "./images/chores.jpg",
+  "./images/planner.jpg",
   "./images/defaults/art.jpg",
   "./images/defaults/cooking.jpg",
   "./images/defaults/friends.jpg",
