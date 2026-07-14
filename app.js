@@ -190,7 +190,7 @@
     { key: "planner",      label: "Summer 2026 Planner", emoji: "📅", planner: true, wide: true },
     { key: "daily",        label: "Daily basics",     emoji: "🎯", target: "🎯 Daily basics", tall: true },
     { key: "chores",       label: "Chores",           emoji: "💰", target: "💰 Chores" },
-    { key: "activities",   label: "Days out",         emoji: "🗓️", target: "🗓️ Activities & days out", tall: true },
+    { key: "activities",   label: "Activities and Days Out", emoji: "🗓️", target: "🗓️ Activities & days out", tall: true },
     { key: "rainy",        label: "Rainy-day ideas",  emoji: "🌧️", target: "🌧️ Rainy-day ideas" },
     { key: "daybag",       label: "Day-out bag",      emoji: "🧳", target: "🧳 Day-out bag", tall: true },
     { key: "learning",     label: "Keep learning",    emoji: "📚", target: "📚 Keep learning" },
@@ -214,7 +214,7 @@
   // Photo attribution (Creative Commons) shown in the drawer.
   const PHOTO_CREDITS = [
     { label: "Daily basics", by: "User-provided", lic: "Unknown" },
-    { label: "Days out", by: "Knthabrew (Wikimedia)", lic: "CC BY-SA 4.0" },
+    { label: "Activities and Days Out", by: "User-provided", lic: "Unknown" },
     { label: "Rainy-day ideas", by: "Kristin Hardwick (StockSnap)", lic: "CC0" },
     { label: "Day-out bag", by: "ambermb (Wikimedia)", lic: "CC0" },
     { label: "Keep learning", by: "Direct Media (StockSnap)", lic: "CC0" },
@@ -685,36 +685,11 @@
     }
   }
 
-  // Map a WMO weather code to a friendly emoji + short label.
-  function weatherIcon(code) {
-    if (code === 0) return { icon: "☀️", label: "Clear" };
-    if (code === 1) return { icon: "🌤️", label: "Mainly clear" };
-    if (code === 2) return { icon: "⛅", label: "Partly cloudy" };
-    if (code === 3) return { icon: "☁️", label: "Overcast" };
-    if (code === 45 || code === 48) return { icon: "🌫️", label: "Fog" };
-    if (code >= 51 && code <= 57) return { icon: "🌦️", label: "Drizzle" };
-    if (code >= 61 && code <= 67) return { icon: "🌧️", label: "Rain" };
-    if (code >= 71 && code <= 77) return { icon: "🌨️", label: "Snow" };
-    if (code >= 80 && code <= 82) return { icon: "🌦️", label: "Showers" };
-    if (code === 85 || code === 86) return { icon: "🌨️", label: "Snow showers" };
-    if (code === 95) return { icon: "⛈️", label: "Thunderstorm" };
-    if (code === 96 || code === 99) return { icon: "⛈️", label: "Thunderstorm" };
-    return { icon: "🌡️", label: "" };
-  }
-
-  // Codes that mean "wet" — these badges get a rainy blue tint (regardless of
-  // temperature) so wet days stand out at a glance.
-  function isRainyCode(code) {
-    return (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
-  }
-
-  // Temperature band -> badge colour class (based on the day's high).
-  function tempClass(max) {
-    if (max > 28) return "wx-hot";      // above 28° — red
-    if (max >= 25) return "wx-warm";    // 25–28° — orange
-    if (max >= 20) return "wx-mild";    // 20–25° — yellow
-    return "wx-cool";                   // below 20° — cool blue
-  }
+  // Pure weather helpers live in weather-utils.js so they can be unit-tested
+  // under Node. app.js just borrows them here (same names as before).
+  const weatherIcon = WeatherUtils.weatherIcon;
+  const isRainyCode = WeatherUtils.isRainyCode;
+  const tempClass = WeatherUtils.tempClass;
 
   function setWeatherStatus(msg, kind) {
     weatherStatusEl.textContent = msg || "";
@@ -1001,6 +976,9 @@
       dayPanelListEl.appendChild(li);
     } else {
       const iso = ymd(day);
+      // Heads-up: is rain forecast for this day? (Only when we have weather.)
+      const wx = weatherByDay[iso];
+      const rainy = wx && isRainyCode(wx.code);
       items.forEach((it) => {
         const li = document.createElement("li");
         li.className = "day-panel-item";
@@ -1016,6 +994,13 @@
         const meta = document.createElement("span");
         meta.className = "day-panel-item-meta";
         meta.append(txt, cat);
+        // Flag activities planned on a wet day so outdoor plans stand out.
+        if (rainy) {
+          const warn = document.createElement("span");
+          warn.className = "day-panel-rain";
+          warn.textContent = "🌧️ Rain forecast — have a backup plan";
+          meta.append(warn);
+        }
         const rm = document.createElement("button");
         rm.type = "button";
         rm.className = "day-panel-remove";
