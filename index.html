@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#ffdca8" />
+  <meta name="theme-color" content="#3aa7e0" />
   <title>Summer Checklist — Kids' Holidays</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Summer Checklist" />
+  <!-- Friendly rounded fonts (progressive enhancement; system fonts used offline). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -17,8 +21,20 @@
     <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
       <span></span><span></span><span></span>
     </button>
-    <h1>☀️ Summer Checklist</h1>
+    <h1>Summer Checklist</h1>
+    <!-- Elegant hand-drawn sprig flourish under the title. -->
+    <span class="title-flourish" aria-hidden="true">
+      <svg viewBox="0 0 120 24" width="120" height="24" role="img" focusable="false">
+        <path d="M8 12 H46" />
+        <path d="M112 12 H74" />
+        <path d="M60 4 C56 8 56 16 60 20 C64 16 64 8 60 4 Z" class="tf-leaf" />
+        <circle cx="60" cy="12" r="2.4" class="tf-dot" />
+        <path d="M50 12 C53 9 55 9 57 11" class="tf-sprig" />
+        <path d="M70 12 C67 9 65 9 63 11" class="tf-sprig" />
+      </svg>
+    </span>
     <p class="subtitle">Make the most of the school holidays</p>
+    <span id="offline-badge" class="offline-badge" role="status" hidden>● Offline — changes are saved on this device</span>
   </header>
 
   <div id="drawer-overlay" class="drawer-overlay" hidden></div>
@@ -54,6 +70,7 @@
               <span class="hero-bar-fill" id="hero-bar-fill"></span>
             </div>
             <p class="hero-sub" id="hero-sub"><b id="hero-count">0 of 0</b> · Tick things off as you go</p>
+            <p class="hero-earned hidden" id="hero-earned"></p>
           </div>
         </div>
         <div id="all-done" class="all-done hidden">🎉 Amazing — you've done it all!</div>
@@ -65,6 +82,10 @@
         <div class="result-actions">
           <button id="reset-daily" class="btn-secondary">Reset daily basics</button>
           <button id="reset-all" class="btn-secondary">Uncheck everything</button>
+        </div>
+        <div class="data-actions">
+          <button id="export-data" class="btn-secondary">⬇ Export backup</button>
+          <button id="import-data" class="btn-secondary">⬆ Import backup</button>
         </div>
       </section>
     </section>

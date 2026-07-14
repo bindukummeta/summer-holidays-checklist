@@ -1,44 +1,51 @@
 {
-  "beach": {
-    "title": "Beach 2",
-    "creator": "Clarkston SCAMP",
-    "license": "by 2.0",
-    "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "source": "https://www.flickr.com/photos/49872677@N04/4838002599"
+  "daily": {
+    "title": "Mother and child having breakfast in a kitchen",
+    "creator": "User-provided",
+    "license": "Unknown",
+    "license_url": "",
+    "source": "User-provided image"
   },
-  "camping": {
-    "title": "Large family camping tent",
-    "creator": "KeepActive Australia from Melbourne, VIC, Australia",
-    "license": "by-sa 4.0",
+  "activities": {
+    "title": "Passikudah Beach — sandy shore, turquoise sea and blue sky",
+    "creator": "Knthabrew",
+    "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "source": "https://commons.wikimedia.org/w/index.php?curid=127930335"
+    "source": "https://commons.wikimedia.org/wiki/File:Passikudah_Beach.jpg"
   },
-  "museum": {
-    "title": "The New Computer History Museum Exhibition",
-    "creator": "jurvetson",
-    "license": "by 2.0",
-    "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "source": "https://www.flickr.com/photos/44124348109@N01/5111508738"
+  "rainy": {
+    "title": "Children playing a board game",
+    "creator": "Kristin Hardwick",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/TXIMMZTQ7O"
   },
-  "reading": {
-    "title": "Child Reading Book with One Eye Covered",
-    "creator": "National Institutes of Health (NIH)",
-    "license": "pdm 1.0",
-    "license_url": "https://creativecommons.org/publicdomain/mark/1.0/",
-    "source": "https://www.flickr.com/photos/132318516@N08/48997124487"
+  "daybag": {
+    "title": "Boy carrying a red backpack",
+    "creator": "ambermb",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://commons.wikimedia.org/wiki/File:Boy-in-brown-hoodie-carrying-red-backpack-while-walking-on-207697.jpg"
   },
-  "picnic": {
-    "title": "Picnic Blanket Lounging",
-    "creator": "Ashley MacKinnon",
-    "license": "by 2.0",
-    "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "source": "https://www.flickr.com/photos/42395711@N06/9492661712"
+  "learning": {
+    "title": "Child reading a book",
+    "creator": "Direct Media",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/BKDISWTOCH"
   },
-  "hiking": {
-    "title": "Grand Canyon Nat. Park: S. Kaibab Trail As Seen From Yaki Point 0246",
-    "creator": "Grand Canyon NPS",
-    "license": "by 2.0",
-    "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "source": "https://www.flickr.com/photos/50693818@N08/7572271086"
+  "backtoschool": {
+    "title": "Rainbow of colored pencils",
+    "creator": "Artsy Crafty",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/QDZA8FBZYI"
+  },
+  "chores": {
+    "title": "Dog helping with chores — laundry, gloves and duster",
+    "creator": "User-provided",
+    "license": "Unknown",
+    "license_url": "",
+    "source": "User-provided image"
   }
 }

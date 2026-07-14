@@ -1,0 +1,45 @@
+{
+  "_note": "Default photos rotated onto user-created category tiles. All CC0 (public domain, no attribution required) from StockSnap.io.",
+  "art": {
+    "title": "Watercolour painting on a wooden table",
+    "creator": "StockSnap",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/paint-art-LS7125EPYY"
+  },
+  "cooking": {
+    "title": "Making dough in the kitchen",
+    "creator": "StockSnap",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/baking-cooking-UQFSNYXB9C"
+  },
+  "friends": {
+    "title": "Two children on a sofa with a small dog",
+    "creator": "StockSnap",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/kids-children-Y3TGPUFVCH"
+  },
+  "play": {
+    "title": "Children running and playing in a park",
+    "creator": "Family Moments",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/kids-playing-MQJR2N5ZH2"
+  },
+  "children": {
+    "title": "Children together",
+    "creator": "StockSnap",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/kids-children-8T9Y244TK8"
+  },
+  "sprinkles": {
+    "title": "Decorating cookies with sprinkles",
+    "creator": "StockSnap",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://stocksnap.io/photo/bake-sprinkles-5O3VXTCP6N"
+  }
+}

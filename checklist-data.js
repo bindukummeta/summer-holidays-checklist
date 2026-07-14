@@ -4,6 +4,13 @@
  *
  * `daily: true`  -> part of the repeatable daily-basics routine (resettable).
  * (no `daily`)   -> a one-off item ticked once over the whole summer.
+ * `paid: true`   -> a chores category where each item earns money. In a paid
+ *                  category, items are objects: { name: "…", reward: 1.50 }.
+ *                  A chore may also add `daily: true` so it resets each morning
+ *                  (e.g. "Make your bed"); chores without it are one-off for the
+ *                  whole summer (e.g. "Wash the car"). Earned money is banked and
+ *                  kept across daily resets.
+ *                  Everywhere else, items stay simple strings.
  */
 
 const CHECKLIST = [
@@ -95,6 +102,21 @@ const CHECKLIST = [
       "Haircut",
       "Restart bedtime routine",
       "Check term dates",
+    ],
+  },
+  {
+    category: "💰 Chores",
+    color: "#b9e3a8",
+    paid: true,
+    items: [
+      { name: "Make your bed", reward: 0.5, daily: true },
+      { name: "Tidy your bedroom", reward: 1.0, daily: true },
+      { name: "Load / empty the dishwasher", reward: 1.0, daily: true },
+      { name: "Take out rubbish & recycling", reward: 0.5, daily: true },
+      { name: "Water the plants", reward: 0.5, daily: true },
+      { name: "Set the table", reward: 0.5, daily: true },
+      { name: "Vacuum a room", reward: 1.5 },
+      { name: "Wash the car", reward: 3.0 },
     ],
   },
 ];
