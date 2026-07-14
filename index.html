@@ -99,6 +99,12 @@
 
   <script src="checklist-data.js"></script>
   <script src="app.js"></script>
+  <!-- Vercel Web Analytics (static-site script method; served by Vercel at /_vercel/insights).
+       The inline queue buffers any early va() calls until the deferred script loads. -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
   <script>
     // Register the service worker in production only. On localhost we skip it (and
     // unregister any existing one) so code edits always show up on reload.
